@@ -1,0 +1,42 @@
+#building the file first
+FROM node:18-alpine as development
+
+WORKDIR /usr/src/app
+
+#Copy package.json and package-lock.json and tsconfig.json files to the app
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY src ./src
+
+RUN npm install
+RUN npm run build
+
+
+#stage two for running
+FROM node:18-alpine as production
+
+WORKDIR /usr/src/app
+COPY package*.json ./
+
+#define env variables
+ENV NODE_ENV=prod
+ENV PORT=5000
+ENV PGHOST=ep-crimson-frost-061795.us-east-2.aws.neon.tech
+ENV PGUSER=maadmughal
+ENV PGPASSWORD="AraR5dbjC1vk"
+ENV PGDATABASE=neondb
+ENV JWT_SECRET=abcdefgh
+ENV JWT_EXP=1d
+
+#Install dependencies-- clean install is recommended in automated installations
+RUN npm ci --omit=dev
+
+#copy files and folders to from development image build to this destination
+COPY --from=development /app/dist ./dist
+
+#expose port on which container will listen
+EXPOSE 5000
+
+#start command
+CMD [ "bash", "initial-script.sh" ]
+
